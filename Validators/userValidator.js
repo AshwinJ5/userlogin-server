@@ -28,12 +28,15 @@ const updateUserSchema = Joi.object({
         "string.base": "Username must be a string",
         "string.min": "Username must have at least 3 characters",
         "string.max": "Username must have at most 30 characters",
+        "string.empty": "Username field is empty",
     }),
     email: Joi.string().email().messages({
         "string.email": "Please enter a valid email address",
+        "string.empty": "Email field is empty",
     }),
     password: Joi.string().min(6).messages({
         "string.min": "Password must have at least 6 characters",
+        "string.empty": "Password field is empty",
     }),
     userImage: Joi.string(),
 });

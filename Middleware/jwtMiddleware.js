@@ -1,20 +1,29 @@
 const jwt=require("jsonwebtoken")
 
 const jwtMiddleware=(req,res,next)=>{
-    console.log('inside jwt middleware fn');
     try {
-        const token=req.headers['authorization'].split(" ")[1]
-        console.log(token);   
-        if(token){
-            jwtResponse=jwt.verify(token,process.env.Key_jwt)
-            console.log(jwtResponse);
-            req.payload=jwtResponse.userId
-            next()
-        }else{
-            res.status(401).json("Please Login")
+        const authHeader = req.headers["authorization"];
+        if (!authHeader) {
+            return res.status(401).json({ message: "Authorization token required" });
         }
-    } catch(err)  {
-        res.status(403).json("Invalid token")
+
+        const token=authHeader.split(" ")[1]
+        if(!token){
+            return res.status(401).json({ message: "Token missing. Please login" });
+        }
+        jwt.verify(token, process.env.Key_jwt, (err, decoded) => {
+            if (err) {
+                if (err.name === "TokenExpiredError") {
+                    return res.status(401).json({ message: "Token expired. Please log in again." });
+                }
+                return res.status(403).json({ message: "Invalid token" });
+            }
+
+            req.payload = decoded.userId;
+            next();
+        });
+    }catch(err)  {
+        res.status(500).json({ message: "Internal server error", error: err.message });
     }
     
 }

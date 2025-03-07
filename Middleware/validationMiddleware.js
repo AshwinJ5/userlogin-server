@@ -1,4 +1,5 @@
 const Joi = require("joi");
+const mongoose=require('mongoose')
 
 // Schema for registering a user (all fields required)
 const registerUserSchema = Joi.object({
@@ -9,6 +10,21 @@ const registerUserSchema = Joi.object({
         "string.max": "Username must have at most 30 characters",
         "any.required": "Username is required",
     }),
+    email: Joi.string().email().required().messages({
+        "string.email": "Please enter a valid email address",
+        "string.empty": "Email is required",
+        "any.required": "Email is required",
+    }),
+    password: Joi.string().min(6).required().messages({
+        "string.min": "Password must have at least 6 characters",
+        "string.empty": "Password is required",
+        "any.required": "Password is required",
+    }),
+    userImage: Joi.string().optional(),
+});
+
+// Schema for log in a user (all fields optional)
+const loginUserSchema = Joi.object({
     email: Joi.string().email().required().messages({
         "string.email": "Please enter a valid email address",
         "string.empty": "Email is required",
@@ -41,4 +57,30 @@ const updateUserSchema = Joi.object({
     userImage: Joi.string(),
 });
 
-module.exports = { registerUserSchema, updateUserSchema };
+// Middleware function for validation of req.body
+const validateRequest = (schema) => {
+    return (req, res, next) => {
+        const { error } = schema.validate(req.body, { abortEarly: false });
+        if (error) {
+            return res.status(400).json({ errors: error.details.map((err) => err.message) });
+        }
+        next();
+    };
+};
+
+// Middleware function for validation of req.params
+const validateObjectId = (paramName) => {
+    return (req, res, next) => {
+        if (!mongoose.Types.ObjectId.isValid(req.params[paramName])) {
+            return res.status(400).json({ message: `Invalid ${paramName} format` });
+        }
+        next();
+    };
+};
+
+module.exports = { 
+    validateRegisterUser: validateRequest(registerUserSchema), 
+    validateUpdateUser: validateRequest(updateUserSchema),
+    validateLoginUser: validateRequest(loginUserSchema),
+    validateObjectId
+};

@@ -1,19 +1,14 @@
 const users = require("../Schema/userModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const { default: mongoose } = require("mongoose");
 const fs = require("fs");
 const path = require("path");
-const { updateUserSchema } = require("../Validators/userValidator");
-const { registerUserSchema } = require("../Validators/userValidator");
+const { generateAccessToken, generateRefreshToken } = require("../Services/tokenServices");
 
+
+let refreshTokens = []; 
 // register
-
 exports.register = async (req, res) => {
-    const { error } = registerUserSchema.validate(req.body, { abortEarly: false });
-    if (error) {
-        return res.status(400).json({ message: "Validation error", errors: error.details.map((err) => err.message) });
-    }
     const { userName, email, password } = req.body;
 
     try {
@@ -21,7 +16,7 @@ exports.register = async (req, res) => {
         if (existingUser) {
             res.status(406).json("User Already Exist! Please Login..");
         } else {
-            const hashedPassword = await bcrypt.hash(password, 10);
+            const hashedPassword = await bcrypt.hash(password, process.env.SALT);
             const newUser = new users({
                 userName,
                 email,
@@ -39,16 +34,6 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
     const { email, password } = req.body;
     try {
-        if (!email) {
-            return res.status(400).json({
-                message: "Email not provided",
-            });
-        }
-        if (!password) {
-            return res.status(400).json({
-                message: "Password not provided",
-            });
-        }
         const existingUser = await users.findOne({ email });
         if (existingUser) {
             const isMatch = await bcrypt.compare(password, existingUser.password);
@@ -57,8 +42,12 @@ exports.login = async (req, res) => {
                     message: "The email or password you entered is incorrect. Please check your details and try again",
                 });
             }
-            const token = jwt.sign({ userId: existingUser._id }, process.env.Key_jwt, { expiresIn: "1h" });
-            res.status(200).json({ existingUser, token });
+           
+        const accessToken = generateAccessToken(existingUser._id);
+        const refreshToken = generateRefreshToken(existingUser._id);
+
+        res.status(200).json({ user: existingUser, accessToken, refreshToken });
+
         } else if (!existingUser) {
             return res
                 .status(400)
@@ -72,7 +61,6 @@ exports.login = async (req, res) => {
 };
 
 //get all users data
-
 exports.getAllUserData = async (req, res) => {
     try {
         const allUsers = await users.find().select("-password");
@@ -86,24 +74,14 @@ exports.getAllUserData = async (req, res) => {
 };
 
 //edit a user data
-
 exports.updateUser = async (req, res) => {
     const { userName, email, password } = req.body;
     const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: "Invalid user ID format" });
-    }
 
     try {
         const existingUser = await users.findById(id);
         if (!existingUser) {
             return res.status(404).json({ message: "User not found" });
-        }
-
-        const { error } = updateUserSchema.validate(req.body, { abortEarly: false });
-        if (error) {
-            return res.status(400).json({ message: "Validation error", errors: error.details.map((err) => err.message) });
         }
 
         let updateData = {};
@@ -142,13 +120,8 @@ exports.updateUser = async (req, res) => {
 };
 
 // delete an user
-
 exports.deleteUser = async (req, res) => {
     const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: "Invalid user ID format" });
-    }
 
     try {
         const user = await users.findById(id);
@@ -176,3 +149,4 @@ exports.deleteUser = async (req, res) => {
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };
+

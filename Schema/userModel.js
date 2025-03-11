@@ -15,7 +15,8 @@ const UserSchema= new mongoose.Schema({
     email:{
         required:true,
         type:String
-    }
+    },
+    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId }] 
 })
 
 const users=mongoose.model('user',UserSchema)

@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-let refreshTokens = []; // Store valid refresh tokens (use DB in production)
 
 exports.refreshToken = (req, res) => {
   const { refreshToken } = req.body;

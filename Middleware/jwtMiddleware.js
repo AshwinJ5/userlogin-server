@@ -14,7 +14,7 @@ const jwtMiddleware = (req, res, next) => {
         }
 
         verifyAccessToken(token); 
-        req.userId = verifyAccessToken(token).userId;
+        req.userId = verifyAccessToken(token).userId;                
         next();
     } catch (err) {
         if (err.name === "TokenExpiredError") {

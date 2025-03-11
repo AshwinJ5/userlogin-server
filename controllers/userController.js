@@ -1,12 +1,9 @@
 const users = require("../Schema/userModel");
-const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const fs = require("fs");
 const path = require("path");
 const { generateAccessToken, generateRefreshToken } = require("../Services/tokenServices");
 
-
-let refreshTokens = []; 
 // register
 exports.register = async (req, res) => {
     const { userName, email, password } = req.body;
@@ -14,19 +11,21 @@ exports.register = async (req, res) => {
     try {
         const existingUser = await users.findOne({ email });
         if (existingUser) {
-            res.status(406).json("User Already Exist! Please Login..");
-        } else {
-            const hashedPassword = await bcrypt.hash(password, process.env.SALT);
-            const newUser = new users({
-                userName,
-                email,
-                password: hashedPassword,
-            });
-            await newUser.save();
-            res.status(200).json(newUser);
+            return res.status(406).json({ message: "User Already Exists! Please Login." });
         }
+        const saltRounds = parseInt(process.env.SALT);
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        const newUser = new users({
+            userName,
+            email,
+            password: hashedPassword,
+        });
+        await newUser.save();
+
+        return res.status(201).json({ message: "User registered successfully", newUser });
     } catch (err) {
-        res.status(401).json(err);
+        console.error("Registration error:", err);
+        return res.status(500).json({ message: "Server error", error: err.message });
     }
 };
 
@@ -42,12 +41,11 @@ exports.login = async (req, res) => {
                     message: "The email or password you entered is incorrect. Please check your details and try again",
                 });
             }
-           
-        const accessToken = generateAccessToken(existingUser._id);
-        const refreshToken = generateRefreshToken(existingUser._id);
 
-        res.status(200).json({ user: existingUser, accessToken, refreshToken });
+            const accessToken = generateAccessToken(existingUser._id);
+            const refreshToken = generateRefreshToken(existingUser._id);
 
+            res.status(200).json({ user:{id:existingUser._id, username:existingUser.userName,email:existingUser.email}, accessToken, refreshToken });
         } else if (!existingUser) {
             return res
                 .status(400)
@@ -63,7 +61,7 @@ exports.login = async (req, res) => {
 //get all users data
 exports.getAllUserData = async (req, res) => {
     try {
-        const allUsers = await users.find().select("-password");
+        const allUsers = await users.find().select("-password -blockedUsers");
         if (!allUsers.length) {
             return res.status(404).json({ message: "No users found" });
         }
@@ -97,7 +95,7 @@ exports.updateUser = async (req, res) => {
                 if (fs.existsSync(oldImagePath)) {
                     try {
                         fs.unlinkSync(oldImagePath);
-                        console.log("Old image deleted:", existingUser.userImage);
+                        // console.log("Old image deleted:", existingUser.userImage);
                     } catch (err) {
                         console.error("Error deleting old image:", err);
                     }
@@ -134,7 +132,7 @@ exports.deleteUser = async (req, res) => {
             if (fs.existsSync(imagePath)) {
                 try {
                     fs.unlinkSync(imagePath);
-                    console.log("User image deleted:", user.userImage);
+                    // console.log("User image deleted:", user.userImage);
                 } catch (err) {
                     console.error("Error deleting image:", err);
                 }
@@ -150,3 +148,30 @@ exports.deleteUser = async (req, res) => {
     }
 };
 
+// block or unblock a user
+exports.blockOrUnblockAnyUser = async (req, res) => {
+    const userId = req.userId; 
+    const { blockid } = req.params;
+
+    try {
+        const user = await users.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (user.blockedUsers.includes(blockid)) {
+            await users.findByIdAndUpdate(userId, {
+                $pull: { blockedUsers: blockid }
+            });
+            return res.status(200).json({ message: "User unblocked successfully" });
+        } else {
+            await users.findByIdAndUpdate(userId, {
+                $addToSet: { blockedUsers: blockid }
+            });
+            return res.status(200).json({ message: "User blocked successfully" });
+        }
+    } catch (error) {
+        res.status(500).json({ error: "Something went wrong" });
+    }
+};

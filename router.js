@@ -1,5 +1,4 @@
 const express=require('express')
-
 const route=express.Router()
 const userController=require('./controllers/userController')
 const productController=require('./controllers/productcontroller')
@@ -43,6 +42,6 @@ route.get('/product/:id',jwtMiddleware,validateObjectId("id"),productController.
 route.delete('/product/:id',jwtMiddleware,validateObjectId("id"),productController.deleteAProduct)
 
 // refresh token
-route.post("/refresh-token", refreshToken);
+route.post("/refresh-token",jwtMiddleware, refreshToken);
 
 module.exports=route

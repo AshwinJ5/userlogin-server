@@ -35,7 +35,7 @@ exports.login = async (req, res) => {
     try {
         const existingUser = await users.findOne({ email });
         if (existingUser) {
-            const isMatch = await bcrypt.compare(password, existingUser.password);
+            const isMatch = await bcrypt.compare(password, existingUser.password);            
             if (!isMatch) {
                 return res.status(400).json({
                     message: "The email or password you entered is incorrect. Please check your details and try again",
@@ -95,7 +95,6 @@ exports.updateUser = async (req, res) => {
                 if (fs.existsSync(oldImagePath)) {
                     try {
                         fs.unlinkSync(oldImagePath);
-                        // console.log("Old image deleted:", existingUser.userImage);
                     } catch (err) {
                         console.error("Error deleting old image:", err);
                     }
@@ -132,7 +131,6 @@ exports.deleteUser = async (req, res) => {
             if (fs.existsSync(imagePath)) {
                 try {
                     fs.unlinkSync(imagePath);
-                    // console.log("User image deleted:", user.userImage);
                 } catch (err) {
                     console.error("Error deleting image:", err);
                 }

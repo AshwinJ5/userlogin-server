@@ -6,7 +6,8 @@ const multerConfig=require('./Middleware/multerMiddleware')
 const jwtMiddleware = require('./Middleware/jwtMiddleware');
 const {validateUpdateUser,validateRegisterUser,validateLoginUser,validateObjectId} =require('./Middleware/validationMiddleware');
 const { refreshToken } = require('./controllers/refreshController');
-const { validateProduct, validateUpdateProduct } = require('./Middleware/productValidation')
+const { validateProduct, validateUpdateProduct, validateAddBrand, validateUpdateBrand } = require('./Middleware/productValidation')
+const brandController = require('./controllers/brandController')
 
 // register
 route.post('/register',validateRegisterUser,userController.register)
@@ -14,7 +15,7 @@ route.post('/register',validateRegisterUser,userController.register)
 // login
 route.post('/login',validateLoginUser,userController.login)
 
-// block or unb a user
+// block or unblock a user
 route.post('/blockusers/:blockid',jwtMiddleware,validateObjectId("blockid"),userController.blockOrUnblockAnyUser)
 
 // get all users
@@ -42,6 +43,16 @@ route.get('/product/:id',jwtMiddleware,validateObjectId("id"),productController.
 route.delete('/product/:id',jwtMiddleware,validateObjectId("id"),productController.deleteAProduct)
 
 // refresh token
-route.post("/refresh-token",jwtMiddleware, refreshToken);
+route.post("/refresh-token", refreshToken);
+
+//add new brand
+route.post('/brands',jwtMiddleware, multerConfig.single("brandImage"),validateAddBrand,brandController.addNewBrand)
+
+//update brand data
+route.patch('/brands/:id',jwtMiddleware, multerConfig.single("brandImage"),validateObjectId("id"),validateUpdateBrand,brandController.updateBrand)
+
+// delete a product by added user
+route.delete('/brands/:id',jwtMiddleware,validateObjectId("id"),brandController.deleteABrand)
+
 
 module.exports=route

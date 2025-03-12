@@ -12,7 +12,7 @@ const productSchema= new mongoose.Schema({
     },
     brand:{
         required:true,
-        type:String
+        type:String,
     },
     description:{
         required:true,

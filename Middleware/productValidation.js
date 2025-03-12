@@ -7,7 +7,7 @@ const addProductSchema = Joi.object({
         "string.base": "Name of product must be a string",
         "string.empty": "Product name is required",
         "string.min": "Product name must have at least 5 characters",
-        "string.max": "Product name must have at most 50 characters",
+        "string.max": "Product name must have at most 100 characters",
         "any.required": "Product name is required",
     }),
     brand:Joi.string().min(2).max(20).required().messages({
@@ -82,6 +82,54 @@ const updateProductSchema = Joi.object({
     }),
 });
 
+const addNewBrand = Joi.object({
+    brandName: Joi.string().min(2).max(20).required().messages({
+        "string.base": "Name of brand must be a string",
+        "string.empty": "Brand name is required",
+        "string.min": "Brand name must have at least 2 characters",
+        "string.max": "Brand name must have at most 20 characters",
+        "any.required": "Brand name is required",
+    }),
+    brandImage: Joi.string(),
+    brandCategory: Joi.alternatives().try(
+        Joi.array().items(
+            Joi.string().min(2).max(30).messages({
+                "string.base": "Each category must be a string",
+                "string.empty": "Category cannot be empty",
+                "string.min": "Category must have at least 2 characters",
+                "string.max": "Category must have at most 30 characters",
+            })
+        ),
+        Joi.string() 
+    ).required().messages({
+        "any.required": "At least one brand category is required",
+    }),
+});
+
+
+const updateABrand = Joi.object({
+    brandName: Joi.string().min(2).max(20).messages({
+        "string.base": "Name of brand must be a string",
+        "string.empty": "Brand name is required",
+        "string.min": "Brand name must have at least 2 characters",
+        "string.max": "Brand name must have at most 20 characters",
+        "any.required": "Brand name is required",
+    }),
+    brandImage: Joi.string(),
+    brandCategory: Joi.alternatives().try(
+        Joi.array().items(
+            Joi.string().min(2).max(30).messages({
+                "string.base": "Each category must be a string",
+                "string.empty": "Category cannot be empty",
+                "string.min": "Category must have at least 2 characters",
+                "string.max": "Category must have at most 30 characters",
+            })
+        ),
+        Joi.string() 
+    ),
+});
+
+
 // Middleware function for validation of req.body
 const validateRequest = (schema) => {
     return (req, res, next) => {
@@ -106,5 +154,7 @@ const validateObjectId = (paramName) => {
 module.exports = { 
     validateProduct: validateRequest(addProductSchema), 
     validateUpdateProduct: validateRequest(updateProductSchema), 
+    validateAddBrand: validateRequest(addNewBrand), 
+    validateUpdateBrand: validateRequest(updateABrand), 
     validateObjectId
 };
